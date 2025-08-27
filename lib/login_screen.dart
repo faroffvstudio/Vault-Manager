@@ -11,13 +11,13 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen>
     with TickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
-  final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
+  final _keyController = TextEditingController();
+  String? _selectedRole;
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
   bool _isLoading = false;
-  bool _obscurePassword = true;
+
 
   @override
   void initState() {
@@ -42,8 +42,7 @@ class _LoginScreenState extends State<LoginScreen>
   @override
   void dispose() {
     _animationController.dispose();
-    _emailController.dispose();
-    _passwordController.dispose();
+    _keyController.dispose();
     super.dispose();
   }
 
@@ -129,7 +128,7 @@ class _LoginScreenState extends State<LoginScreen>
         ),
         const SizedBox(height: 8),
         Text(
-          'Sign in to continue',
+          'Enter your key to continue',
           style: TextStyle(
             fontSize: 16,
             color: Colors.grey[600],
@@ -155,43 +154,31 @@ class _LoginScreenState extends State<LoginScreen>
       ),
       child: Column(
         children: [
-          TextFormField(
-            controller: _emailController,
-            keyboardType: TextInputType.emailAddress,
+          DropdownButtonFormField<String>(
+            value: _selectedRole,
             decoration: InputDecoration(
-              labelText: 'Email',
-              prefixIcon: const Icon(Icons.email_outlined),
+              labelText: 'Select Role',
+              prefixIcon: const Icon(Icons.person),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(16),
               ),
               filled: true,
               fillColor: const Color(0xFFF8F9FA),
             ),
-            validator: (value) {
-              if (value == null || value.isEmpty) {
-                return 'Please enter your email';
-              }
-              if (!value.contains('@')) {
-                return 'Please enter a valid email';
-              }
-              return null;
-            },
+            items: const [
+              DropdownMenuItem(value: 'Admin', child: Text('Admin')),
+              DropdownMenuItem(value: 'User', child: Text('User')),
+              DropdownMenuItem(value: 'Manager', child: Text('Manager')),
+            ],
+            onChanged: (value) => setState(() => _selectedRole = value),
+            validator: (value) => value == null ? 'Please select a role' : null,
           ),
           const SizedBox(height: 20),
           TextFormField(
-            controller: _passwordController,
-            obscureText: _obscurePassword,
+            controller: _keyController,
             decoration: InputDecoration(
-              labelText: 'Password',
-              prefixIcon: const Icon(Icons.lock_outline),
-              suffixIcon: IconButton(
-                icon: Icon(
-                  _obscurePassword ? Icons.visibility : Icons.visibility_off,
-                ),
-                onPressed: () {
-                  setState(() => _obscurePassword = !_obscurePassword);
-                },
-              ),
+              labelText: 'Key Input',
+              prefixIcon: const Icon(Icons.vpn_key),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(16),
               ),
@@ -200,10 +187,7 @@ class _LoginScreenState extends State<LoginScreen>
             ),
             validator: (value) {
               if (value == null || value.isEmpty) {
-                return 'Please enter your password';
-              }
-              if (value.length < 6) {
-                return 'Password must be at least 6 characters';
+                return 'Please enter your key';
               }
               return null;
             },

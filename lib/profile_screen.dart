@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 
 class ProfileScreen extends StatefulWidget {
-  const ProfileScreen({super.key});
+  final ScrollController? scrollController;
+  const ProfileScreen({super.key, this.scrollController});
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
@@ -38,10 +39,12 @@ class _ProfileScreenState extends State<ProfileScreen>
       body: FadeTransition(
         opacity: _fadeAnimation,
         child: SingleChildScrollView(
+          controller: widget.scrollController,
           padding: const EdgeInsets.only(top: 20, left: 20, right: 20, bottom: 100),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildProfileCard(),
+              _buildWelcomeSection(),
               const SizedBox(height: 24),
               _buildStatsRow(),
               const SizedBox(height: 24),
@@ -69,139 +72,110 @@ class _ProfileScreenState extends State<ProfileScreen>
     );
   }
 
-  Widget _buildProfileCard() {
+  Widget _buildWelcomeSection() {
     return Container(
-      padding: const EdgeInsets.all(28),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
+        gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFF667eea), Color(0xFF764ba2), Color(0xFF8B5CF6)],
-          stops: [0.0, 0.6, 1.0],
+          colors: [
+            Colors.white,
+            Colors.blue.shade50,
+          ],
         ),
-        borderRadius: BorderRadius.circular(25),
+        borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF667eea).withOpacity(0.4),
-            blurRadius: 30,
-            offset: const Offset(0, 12),
+            color: Colors.black.withOpacity(0.15),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
           ),
           BoxShadow(
-            color: const Color(0xFF764ba2).withOpacity(0.2),
-            blurRadius: 15,
-            offset: const Offset(0, 4),
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 5,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
-      child: Stack(
+      child: Row(
         children: [
-          Positioned(
-            top: -10,
-            right: -10,
-            child: Container(
-              width: 100,
-              height: 100,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.white.withOpacity(0.05),
+          Container(
+            padding: const EdgeInsets.all(3),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: const LinearGradient(
+                colors: [Color(0xFF667eea), Color(0xFF764ba2)],
+              ),
+            ),
+            child: CircleAvatar(
+              radius: 35,
+              backgroundColor: Colors.white,
+              child: const Icon(
+                Icons.person,
+                size: 35,
+                color: Color(0xFF667eea),
               ),
             ),
           ),
-          Positioned(
-            bottom: -20,
-            left: -20,
-            child: Container(
-              width: 80,
-              height: 80,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.white.withOpacity(0.03),
-              ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'John Doe',
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.grey[800],
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF667eea), Color(0xFF764ba2)],
+                    ),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Text(
+                    'Employee ID: VE001',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Row(
+                  children: [
+                    Icon(
+                      Icons.email,
+                      color: Colors.grey[600],
+                      size: 14,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      'john.doe@vault.com',
+                      style: TextStyle(
+                        color: Colors.grey[600],
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
-          ),
-          Column(
-            children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: Colors.white.withOpacity(0.3),
-                        width: 2,
-                      ),
-                    ),
-                    child: CircleAvatar(
-                      radius: 45,
-                      backgroundColor: Colors.white.withOpacity(0.2),
-                      child: const Icon(
-                        Icons.person,
-                        size: 45,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 20),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'John Doe',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 26,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: -0.5,
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.15),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: const Text(
-                            'Employee ID: VE001',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.email,
-                              color: Colors.white70,
-                              size: 16,
-                            ),
-                            const SizedBox(width: 6),
-                            const Text(
-                              'john.doe@vault.com',
-                              style: TextStyle(
-                                color: Colors.white70,
-                                fontSize: 14,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ],
           ),
         ],
       ),
     );
   }
+
 
   Widget _buildStatsRow() {
     return Row(

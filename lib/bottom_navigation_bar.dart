@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'dashboard_screen.dart';
 import 'transaction_screen.dart';
 import 'add_transaction_screen.dart';
@@ -13,28 +14,92 @@ class CustomBottomNavigationBar extends StatefulWidget {
   State<CustomBottomNavigationBar> createState() => _CustomBottomNavigationBarState();
 }
 
-class _CustomBottomNavigationBarState extends State<CustomBottomNavigationBar> {
+class _CustomBottomNavigationBarState extends State<CustomBottomNavigationBar> with TickerProviderStateMixin {
   int _currentIndex = 0;
+  late AnimationController _animationController;
+  late Animation<double> _animation;
+  ScrollController _scrollController = ScrollController();
+  bool _isVisible = true;
 
-  final List<Widget> _screens = [
-    const DashboardScreen(),
-    const TransactionScreen(),
+  List<Widget> get _screens => [
+    DashboardScreen(scrollController: _scrollController),
+    TransactionScreen(scrollController: _scrollController),
     const AddTransactionScreen(),
-    const MyLedgerScreen(),
-    const ProfileScreen(),
+    MyLedgerScreen(scrollController: _scrollController),
+    ProfileScreen(scrollController: _scrollController),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 300),
+      vsync: this,
+    );
+    _animation = Tween<double>(begin: 0, end: 1).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
+    );
+    _animationController.forward();
+    _scrollController.addListener(_scrollListener);
+  }
+
+  void _scrollListener() {
+    if (_scrollController.position.userScrollDirection == ScrollDirection.reverse) {
+      if (_isVisible) {
+        _isVisible = false;
+        _animationController.reverse();
+      }
+    } else if (_scrollController.position.userScrollDirection == ScrollDirection.forward) {
+      if (!_isVisible) {
+        _isVisible = true;
+        _animationController.forward();
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Stack(
         children: [
-          _screens[_currentIndex],
-          Positioned(
-            bottom: 16,
-            left: 16,
-            right: 16,
-            child: ClipRRect(
+          NotificationListener<ScrollNotification>(
+            onNotification: (scrollNotification) {
+              if (scrollNotification is ScrollUpdateNotification) {
+                if (scrollNotification.scrollDelta! > 0) {
+                  if (_isVisible) {
+                    _isVisible = false;
+                    _animationController.reverse();
+                  }
+                } else if (scrollNotification.scrollDelta! < 0) {
+                  if (!_isVisible) {
+                    _isVisible = true;
+                    _animationController.forward();
+                  }
+                }
+              }
+              return false;
+            },
+            child: _screens[_currentIndex],
+          ),
+          AnimatedBuilder(
+            animation: _animation,
+            builder: (context, child) {
+              return Transform.translate(
+                offset: Offset(0, (1 - _animation.value) * 100),
+                child: Opacity(
+                  opacity: _animation.value,
+                  child: Positioned(
+                    bottom: 16,
+                    left: 16,
+                    right: 16,
+                    child: ClipRRect(
               borderRadius: BorderRadius.circular(25),
               child: BackdropFilter(
                 filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
@@ -92,9 +157,13 @@ class _CustomBottomNavigationBarState extends State<CustomBottomNavigationBar> {
                       ),
                     ],
                   ),
+                    ),
+                  ),
                 ),
-              ),
-            ),
+                  ),
+                ),
+              );
+            },
           ),
         ],
       ),

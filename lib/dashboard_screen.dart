@@ -6,7 +6,8 @@ import 'attendance_status_screen.dart';
 import 'chat_call_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
-  const DashboardScreen({super.key});
+  final ScrollController? scrollController;
+  const DashboardScreen({super.key, this.scrollController});
 
   @override
   State<DashboardScreen> createState() => _DashboardScreenState();
@@ -53,14 +54,12 @@ class _DashboardScreenState extends State<DashboardScreen>
         child: SlideTransition(
           position: _slideAnimation,
           child: SingleChildScrollView(
+            controller: widget.scrollController,
             padding: const EdgeInsets.only(top: 20, left: 20, right: 20, bottom: 100),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _buildWelcomeSection(),
-                const SizedBox(height: 24),
-                _buildAttendanceCard(),
-                _buildAttendanceBottom(),
                 const SizedBox(height: 24),
                 _buildQuickStats(),
                 const SizedBox(height: 24),
@@ -105,287 +104,132 @@ class _DashboardScreenState extends State<DashboardScreen>
           ),
         ],
       ),
-      child: Row(
+      child: Column(
         children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Container(
-                      width: 4,
-                      height: 24,
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFF667eea), Color(0xFF764ba2)],
+                    Row(
+                      children: [
+                        Container(
+                          width: 4,
+                          height: 24,
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFF667eea), Color(0xFF764ba2)],
+                            ),
+                            borderRadius: BorderRadius.circular(2),
+                          ),
                         ),
-                        borderRadius: BorderRadius.circular(2),
-                      ),
+                        const SizedBox(width: 12),
+                        Text(
+                          'Good Morning!',
+                          style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.grey[800],
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(width: 12),
-                    Text(
-                      'Good Morning!',
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.grey[800],
+                    const SizedBox(height: 8),
+                    Padding(
+                      padding: const EdgeInsets.only(left: 16),
+                      child: Text(
+                        'Present • 8h 30m worked today',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Colors.grey[600],
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 8),
-                Padding(
-                  padding: const EdgeInsets.only(left: 16),
-                  child: Text(
-                    'Ready to make today productive?',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.grey[600],
-                      fontWeight: FontWeight.w500,
-                    ),
+              ),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF667eea), Color(0xFF764ba2)],
                   ),
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF667eea).withOpacity(0.3),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-          ),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF667eea), Color(0xFF764ba2)],
-              ),
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFF667eea).withOpacity(0.3),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
+                child: const Icon(
+                  Icons.wb_sunny,
+                  color: Colors.white,
+                  size: 28,
                 ),
-              ],
-            ),
-            child: const Icon(
-              Icons.wb_sunny,
-              color: Colors.white,
-              size: 28,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildAttendanceCard() {
-    return Container(
-      padding: const EdgeInsets.all(28),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFF667eea), Color(0xFF764ba2), Color(0xFF8B5CF6)],
-          stops: [0.0, 0.6, 1.0],
-        ),
-        borderRadius: BorderRadius.circular(25),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF667eea).withOpacity(0.4),
-            blurRadius: 30,
-            offset: const Offset(0, 12),
-          ),
-          BoxShadow(
-            color: const Color(0xFF764ba2).withOpacity(0.2),
-            blurRadius: 15,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Stack(
-        children: [
-          Positioned(
-            top: -10,
-            right: -10,
-            child: Container(
-              width: 100,
-              height: 100,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.white.withOpacity(0.05),
-              ),
-            ),
-          ),
-          Positioned(
-            bottom: -20,
-            left: -20,
-            child: Container(
-              width: 80,
-              height: 80,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.white.withOpacity(0.03),
-              ),
-            ),
-          ),
-          Column(
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Container(
-                            width: 4,
-                            height: 20,
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(2),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          const Text(
-                            'Today\'s Status',
-                            style: TextStyle(
-                              color: Colors.white70,
-                              fontSize: 15,
-                              fontWeight: FontWeight.w600,
-                              letterSpacing: 0.5,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      const Text(
-                        'Present',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 28,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: -1,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.15),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: const Text(
-                          '8h 30m worked',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: Colors.white.withOpacity(0.3),
-                        width: 1,
-                      ),
-                    ),
-                    child: const Icon(
-                      Icons.check_circle_outline,
-                      color: Colors.white,
-                      size: 32,
-                    ),
-                  ),
-                ],
               ),
             ],
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildAttendanceBottom() {
-    return Container(
-      margin: const EdgeInsets.only(top: 24),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: Colors.white.withOpacity(0.2),
-          width: 1,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.15),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
-          ),
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 5,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: _buildTimeInfo('Check In', '09:00 AM', Icons.login),
-          ),
+          const SizedBox(height: 16),
           Container(
-            width: 1,
-            height: 50,
+            padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Colors.grey.withOpacity(0.1),
-                  Colors.grey.withOpacity(0.4),
-                  Colors.grey.withOpacity(0.1),
-                ],
-              ),
+              color: Colors.grey[50],
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.grey[200]!),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: _buildTimeInfo('Check In', '09:00 AM', Icons.login, const Color(0xFF4CAF50)),
+                ),
+                Container(
+                  width: 1,
+                  height: 40,
+                  color: Colors.grey[300],
+                ),
+                Expanded(
+                  child: _buildTimeInfo('Check Out', '06:00 PM', Icons.logout, const Color(0xFFFF9800)),
+                ),
+              ],
             ),
           ),
-          Expanded(
-            child: _buildTimeInfo('Check Out', '06:00 PM', Icons.logout),
-          ),
         ],
       ),
     );
   }
 
-  Widget _buildTimeInfo(String label, String time, IconData icon) {
+
+
+  Widget _buildTimeInfo(String label, String time, IconData icon, Color color) {
     return Column(
       children: [
         Container(
-          padding: const EdgeInsets.all(8),
+          padding: const EdgeInsets.all(6),
           decoration: BoxDecoration(
-            color: Colors.grey.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(8),
+            color: color.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(6),
           ),
-          child: Icon(icon, color: Colors.grey[700], size: 20),
+          child: Icon(icon, color: color, size: 14),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 6),
         Text(
           label,
           style: TextStyle(
             color: Colors.grey[600],
-            fontSize: 12,
+            fontSize: 11,
             fontWeight: FontWeight.w500,
           ),
         ),
-        const SizedBox(height: 4),
+        const SizedBox(height: 2),
         Text(
           time,
           style: TextStyle(
             color: Colors.grey[800],
-            fontSize: 16,
+            fontSize: 14,
             fontWeight: FontWeight.bold,
           ),
         ),

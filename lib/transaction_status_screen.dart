@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'global_header.dart';
 
 class TransactionStatusScreen extends StatefulWidget {
   final String status;
@@ -38,14 +37,15 @@ class _TransactionStatusScreenState extends State<TransactionStatusScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
-      appBar: GlobalHeader(title: '${widget.status} Requests'),
+
       body: FadeTransition(
         opacity: _fadeAnimation,
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.only(top: 20, left: 20, right: 20, bottom: 100),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildStatusHeader(),
+              _buildWelcomeSection(),
               const SizedBox(height: 24),
               _buildRequestsList(),
             ],
@@ -55,86 +55,191 @@ class _TransactionStatusScreenState extends State<TransactionStatusScreen>
     );
   }
 
-  Widget _buildStatusHeader() {
+  Widget _buildWelcomeSection() {
     Color statusColor;
     IconData statusIcon;
     String statusCount;
+    String totalAmount;
     
     switch (widget.status.toLowerCase()) {
       case 'pending':
         statusColor = const Color(0xFFFF9800);
         statusIcon = Icons.pending;
         statusCount = '5';
+        totalAmount = '₹9,200';
         break;
       case 'rejected':
         statusColor = const Color(0xFFFF5722);
         statusIcon = Icons.cancel;
         statusCount = '2';
+        totalAmount = '₹85,000';
         break;
       case 'accepted':
         statusColor = const Color(0xFF4CAF50);
         statusIcon = Icons.check_circle;
         statusCount = '12';
+        totalAmount = '₹23,300';
         break;
       default:
         statusColor = Colors.grey;
         statusIcon = Icons.help;
         statusCount = '0';
+        totalAmount = '₹0';
     }
 
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [statusColor, statusColor.withOpacity(0.8)],
+          colors: [
+            Colors.white,
+            Colors.blue.shade50,
+          ],
         ),
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: statusColor.withOpacity(0.3),
+            color: Colors.black.withOpacity(0.15),
             blurRadius: 20,
             offset: const Offset(0, 8),
           ),
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 5,
+            offset: const Offset(0, 2),
+          ),
         ],
       ),
-      child: Row(
+      child: Column(
         children: [
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          width: 4,
+                          height: 24,
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFF667eea), Color(0xFF764ba2)],
+                            ),
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Text(
+                          '${widget.status} Requests',
+                          style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.grey[800],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Padding(
+                      padding: const EdgeInsets.only(left: 16),
+                      child: Text(
+                        '$statusCount requests • Total: $totalAmount',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Colors.grey[600],
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF667eea), Color(0xFF764ba2)],
+                  ),
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF667eea).withOpacity(0.3),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Icon(
+                  statusIcon,
+                  color: Colors.white,
+                  size: 28,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(16),
+              color: statusColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: statusColor.withOpacity(0.3)),
             ),
-            child: Icon(statusIcon, color: Colors.white, size: 32),
-          ),
-          const SizedBox(width: 20),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            child: Row(
               children: [
-                Text(
-                  '${widget.status} Requests',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                  ),
+                Expanded(
+                  child: _buildStatusInfo('Count', statusCount, Icons.format_list_numbered, statusColor),
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  '$statusCount total requests',
-                  style: const TextStyle(
-                    color: Colors.white70,
-                    fontSize: 16,
-                  ),
+                Container(
+                  width: 1,
+                  height: 40,
+                  color: statusColor.withOpacity(0.3),
+                ),
+                Expanded(
+                  child: _buildStatusInfo('Amount', totalAmount, Icons.currency_rupee, statusColor),
                 ),
               ],
             ),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildStatusInfo(String label, String value, IconData icon, Color color) {
+    return Column(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(6),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.2),
+            borderRadius: BorderRadius.circular(6),
+          ),
+          child: Icon(icon, color: color, size: 14),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          label,
+          style: TextStyle(
+            color: Colors.grey[600],
+            fontSize: 11,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          value,
+          style: TextStyle(
+            color: Colors.grey[800],
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ],
     );
   }
 

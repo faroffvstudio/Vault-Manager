@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 
 class TransactionScreen extends StatefulWidget {
-  const TransactionScreen({super.key});
+  final ScrollController? scrollController;
+  const TransactionScreen({super.key, this.scrollController});
 
   @override
   State<TransactionScreen> createState() => _TransactionScreenState();
@@ -115,11 +116,12 @@ class _TransactionScreenState extends State<TransactionScreen>
       body: FadeTransition(
         opacity: _fadeAnimation,
         child: SingleChildScrollView(
+          controller: widget.scrollController,
           padding: const EdgeInsets.only(top: 20, left: 20, right: 20, bottom: 100),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildBalanceCard(),
+              _buildWelcomeSection(),
               const SizedBox(height: 24),
               _buildQuickStats(),
               const SizedBox(height: 24),
@@ -135,195 +137,156 @@ class _TransactionScreenState extends State<TransactionScreen>
     );
   }
 
-  Widget _buildBalanceCard() {
+  Widget _buildWelcomeSection() {
     return Container(
-      padding: const EdgeInsets.all(28),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
+        gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFF667eea), Color(0xFF764ba2), Color(0xFF8B5CF6)],
-          stops: [0.0, 0.6, 1.0],
+          colors: [
+            Colors.white,
+            Colors.blue.shade50,
+          ],
         ),
-        borderRadius: BorderRadius.circular(25),
+        borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF667eea).withOpacity(0.4),
-            blurRadius: 30,
-            offset: const Offset(0, 12),
+            color: Colors.black.withOpacity(0.15),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
           ),
           BoxShadow(
-            color: const Color(0xFF764ba2).withOpacity(0.2),
-            blurRadius: 15,
-            offset: const Offset(0, 4),
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 5,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
-      child: Stack(
+      child: Column(
         children: [
-          Positioned(
-            top: -10,
-            right: -10,
-            child: Container(
-              width: 100,
-              height: 100,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.white.withOpacity(0.05),
-              ),
-            ),
-          ),
-          Positioned(
-            bottom: -20,
-            left: -20,
-            child: Container(
-              width: 80,
-              height: 80,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.white.withOpacity(0.03),
-              ),
-            ),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          Row(
             children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Container(
-                            width: 4,
-                            height: 20,
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(2),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          const Text(
-                            'Total Balance',
-                            style: TextStyle(
-                              color: Colors.white70,
-                              fontSize: 15,
-                              fontWeight: FontWeight.w600,
-                              letterSpacing: 0.5,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      const Text(
-                        '₹1,25,750',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 36,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: -1,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.15),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: const Text(
-                          '+2.5% from last month',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: Colors.white.withOpacity(0.3),
-                        width: 1,
-                      ),
-                    ),
-                    child: const Icon(
-                      Icons.account_balance_wallet,
-                      color: Colors.white,
-                      size: 28,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
-              Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: Colors.white.withOpacity(0.2),
-                    width: 1,
-                  ),
-                ),
-                child: Row(
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(
-                      child: _buildBalanceInfo('Income', '₹52,250', Icons.trending_up),
+                    Row(
+                      children: [
+                        Container(
+                          width: 4,
+                          height: 24,
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFF667eea), Color(0xFF764ba2)],
+                            ),
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Text(
+                          'Transactions',
+                          style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.grey[800],
+                          ),
+                        ),
+                      ],
                     ),
-                    Container(
-                      width: 1,
-                      height: 50,
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [
-                            Colors.white.withOpacity(0.1),
-                            Colors.white.withOpacity(0.4),
-                            Colors.white.withOpacity(0.1),
-                          ],
+                    const SizedBox(height: 8),
+                    Padding(
+                      padding: const EdgeInsets.only(left: 16),
+                      child: Text(
+                        'Total Balance: ₹1,25,750 (+2.5%)',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Colors.grey[600],
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
-                    ),
-                    Expanded(
-                      child: _buildBalanceInfo('Expenses', '₹20,700', Icons.trending_down),
                     ),
                   ],
                 ),
               ),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF667eea), Color(0xFF764ba2)],
+                  ),
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF667eea).withOpacity(0.3),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: const Icon(
+                  Icons.account_balance_wallet,
+                  color: Colors.white,
+                  size: 28,
+                ),
+              ),
             ],
+          ),
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.grey[50],
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.grey[200]!),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: _buildBalanceInfo('Income', '₹52,250', Icons.trending_up, const Color(0xFF4CAF50)),
+                ),
+                Container(
+                  width: 1,
+                  height: 40,
+                  color: Colors.grey[300],
+                ),
+                Expanded(
+                  child: _buildBalanceInfo('Expenses', '₹20,700', Icons.trending_down, const Color(0xFFFF5722)),
+                ),
+              ],
+            ),
           ),
         ],
       ),
-  
     );
   }
 
-  Widget _buildBalanceInfo(String label, String amount, IconData icon) {
+
+  Widget _buildBalanceInfo(String label, String amount, IconData icon, Color color) {
     return Column(
       children: [
-        Icon(icon, color: Colors.white70, size: 16),
-        const SizedBox(height: 4),
+        Container(
+          padding: const EdgeInsets.all(6),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(6),
+          ),
+          child: Icon(icon, color: color, size: 14),
+        ),
+        const SizedBox(height: 6),
         Text(
           label,
-          style: const TextStyle(
-            color: Colors.white70,
-            fontSize: 12,
+          style: TextStyle(
+            color: Colors.grey[600],
+            fontSize: 11,
+            fontWeight: FontWeight.w500,
           ),
         ),
         const SizedBox(height: 2),
         Text(
           amount,
-          style: const TextStyle(
-            color: Colors.white,
+          style: TextStyle(
+            color: Colors.grey[800],
             fontSize: 14,
             fontWeight: FontWeight.bold,
           ),
