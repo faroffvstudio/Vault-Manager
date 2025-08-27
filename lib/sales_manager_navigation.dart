@@ -139,7 +139,7 @@ class _SalesManagerNavigationState extends State<SalesManagerNavigation> with Ti
                               ),
                               BottomNavigationBarItem(
                                 icon: _buildNavIcon(Icons.people, 1),
-                                label: 'Leads',
+                                label: 'Add Sales',
                               ),
                               BottomNavigationBarItem(
                                 icon: _buildNavIcon(Icons.analytics, 2),
