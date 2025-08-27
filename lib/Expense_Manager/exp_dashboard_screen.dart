@@ -1,9 +1,9 @@
 // ignore_for_file: deprecated_member_use
 
 import 'package:flutter/material.dart';
-import 'transaction_status_screen.dart';
-import 'attendance_status_screen.dart';
-import 'chat_call_screen.dart';
+import '../transaction_status_screen.dart';
+import 'exp_attendance_status_screen.dart';
+import '../chat_call_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   final ScrollController? scrollController;

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'components/custom_bottom_sheet.dart';
+import '../components/custom_bottom_sheet.dart';
 
 class AddTransactionScreen extends StatefulWidget {
   const AddTransactionScreen({super.key});

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'sales_manager_navigation.dart';
 
 class ProfileScreen extends StatefulWidget {
   final ScrollController? scrollController;
@@ -32,6 +33,12 @@ class _ProfileScreenState extends State<ProfileScreen>
     super.dispose();
   }
 
+  void _navigateToSalesManager() {
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(builder: (context) => const SalesManagerNavigation()),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -58,6 +65,12 @@ class _ProfileScreenState extends State<ProfileScreen>
                 {'icon': Icons.notifications, 'title': 'Notifications', 'color': const Color(0xFF9C27B0)},
                 {'icon': Icons.language, 'title': 'Language', 'color': const Color(0xFF00BCD4)},
                 {'icon': Icons.dark_mode, 'title': 'Theme', 'color': const Color(0xFF607D8B)},
+              ]),
+              const SizedBox(height: 20),
+              _buildMenuSection('Switch', [
+                {'icon': Icons.swap_horiz, 'title': 'Switch Profile', 'color': const Color(0xFF3F51B5), 'onTap': () {}},
+                {'icon': Icons.account_circle, 'title': 'Switch Account', 'color': const Color(0xFFE91E63), 'onTap': () {}},
+                {'icon': Icons.business_center, 'title': 'Switch Sales Manager', 'color': const Color(0xFF009688), 'onTap': () => _navigateToSalesManager()},
               ]),
               const SizedBox(height: 20),
               _buildMenuSection('Support', [
@@ -307,7 +320,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                     item['icon'],
                     item['title'],
                     item['color'],
-                    () {},
+                    item['onTap'] ?? () {},
                     isLogout: isLogout,
                   ),
                   if (!isLast)

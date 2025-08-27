@@ -1,11 +1,11 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
-import 'dashboard_screen.dart';
-import 'transaction_screen.dart';
-import 'add_transaction_screen.dart';
-import 'my_ledger_screen.dart';
-import 'profile_screen.dart';
+import 'exp_dashboard_screen.dart';
+import '../transaction_screen.dart';
+import 'exp_add_transaction_screen.dart';
+import '../my_ledger_screen.dart';
+import '../profile_screen.dart';
 
 class CustomBottomNavigationBar extends StatefulWidget {
   const CustomBottomNavigationBar({super.key});
@@ -18,7 +18,7 @@ class _CustomBottomNavigationBarState extends State<CustomBottomNavigationBar> w
   int _currentIndex = 0;
   late AnimationController _animationController;
   late Animation<double> _animation;
-  ScrollController _scrollController = ScrollController();
+  final ScrollController _scrollController = ScrollController();
   bool _isVisible = true;
 
   List<Widget> get _screens => [
@@ -67,6 +67,7 @@ class _CustomBottomNavigationBarState extends State<CustomBottomNavigationBar> w
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      extendBodyBehindAppBar: true,
       body: Stack(
         children: [
           NotificationListener<ScrollNotification>(
@@ -88,17 +89,17 @@ class _CustomBottomNavigationBarState extends State<CustomBottomNavigationBar> w
             },
             child: _screens[_currentIndex],
           ),
-          AnimatedBuilder(
-            animation: _animation,
-            builder: (context, child) {
-              return Transform.translate(
-                offset: Offset(0, (1 - _animation.value) * 100),
-                child: Opacity(
-                  opacity: _animation.value,
-                  child: Positioned(
-                    bottom: 16,
-                    left: 16,
-                    right: 16,
+          Positioned(
+            bottom: 16,
+            left: 16,
+            right: 16,
+            child: AnimatedBuilder(
+              animation: _animation,
+              builder: (context, child) {
+                return Transform.translate(
+                  offset: Offset(0, (1 - _animation.value) * 100),
+                  child: Opacity(
+                    opacity: _animation.value,
                     child: ClipRRect(
               borderRadius: BorderRadius.circular(25),
               child: BackdropFilter(
@@ -159,11 +160,11 @@ class _CustomBottomNavigationBarState extends State<CustomBottomNavigationBar> w
                   ),
                     ),
                   ),
-                ),
+                    ),
                   ),
-                ),
-              );
-            },
+                );
+              },
+            ),
           ),
         ],
       ),
