@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'splash_screen.dart';
 
 void main() {
-  runApp(const MyApp());
+  runApp(const VaultManager());
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class VaultManager extends StatelessWidget {
+  const VaultManager({super.key});
 
   // This widget is the root of your application.
   @override

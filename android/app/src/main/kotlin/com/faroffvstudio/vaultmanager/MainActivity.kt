@@ -1,4 +1,4 @@
-package com.example.vault_emp
+package com.faroffvstudio.vaultmanager
 
 import io.flutter.embedding.android.FlutterActivity
 
