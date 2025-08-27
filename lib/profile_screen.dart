@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:vaultmanager/Expense_Manager/exp_bottom_navigation_bar.dart';
 import 'sales_manager_navigation.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -39,6 +40,12 @@ class _ProfileScreenState extends State<ProfileScreen>
     );
   }
 
+  void _navigateToExpenseManager() {
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(builder: (context) => const CustomBottomNavigationBar()),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -71,6 +78,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                 {'icon': Icons.swap_horiz, 'title': 'Switch Profile', 'color': const Color(0xFF3F51B5), 'onTap': () {}},
                 {'icon': Icons.account_circle, 'title': 'Switch Account', 'color': const Color(0xFFE91E63), 'onTap': () {}},
                 {'icon': Icons.business_center, 'title': 'Switch Sales Manager', 'color': const Color(0xFF009688), 'onTap': () => _navigateToSalesManager()},
+                {'icon': Icons.receipt_long, 'title': 'Switch Expense Manager', 'color': const Color(0xFFFF5722), 'onTap': () => _navigateToExpenseManager()},
               ]),
               const SizedBox(height: 20),
               _buildMenuSection('Support', [
