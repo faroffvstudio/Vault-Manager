@@ -1,4 +1,8 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
+import 'package:vaultmanager/session_manager.dart';
+import 'package:vaultmanager/supabase_service.dart';
 
 class TransactionStatusScreen extends StatefulWidget {
   final String status;
@@ -12,7 +16,13 @@ class TransactionStatusScreen extends StatefulWidget {
 class _TransactionStatusScreenState extends State<TransactionStatusScreen>
     with TickerProviderStateMixin {
   late AnimationController _animationController;
+  late AnimationController _shimmerController;
   late Animation<double> _fadeAnimation;
+  late Animation<double> _shimmerAnimation;
+  
+  Map<String, dynamic>? _userData;
+  List<Map<String, dynamic>> _realTransactions = [];
+  bool _isLoading = true;
 
   @override
   void initState() {
@@ -21,15 +31,24 @@ class _TransactionStatusScreenState extends State<TransactionStatusScreen>
       duration: const Duration(milliseconds: 600),
       vsync: this,
     );
+    _shimmerController = AnimationController(
+      duration: const Duration(milliseconds: 1500),
+      vsync: this,
+    )..repeat();
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
     );
+    _shimmerAnimation = Tween<double>(begin: -1.0, end: 2.0).animate(
+      CurvedAnimation(parent: _shimmerController, curve: Curves.easeInOut),
+    );
     _animationController.forward();
+    _loadTransactionData();
   }
 
   @override
   void dispose() {
     _animationController.dispose();
+    _shimmerController.dispose();
     super.dispose();
   }
 
@@ -40,15 +59,19 @@ class _TransactionStatusScreenState extends State<TransactionStatusScreen>
 
       body: FadeTransition(
         opacity: _fadeAnimation,
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.only(top: 20, left: 20, right: 20, bottom: 100),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildWelcomeSection(),
-              const SizedBox(height: 24),
-              _buildRequestsList(),
-            ],
+        child: RefreshIndicator(
+          onRefresh: _refreshTransactionData,
+          color: const Color(0xFF667eea),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.only(top: 20, left: 20, right: 20, bottom: 100),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _isLoading ? _buildShimmerWelcome() : _buildWelcomeSection(),
+                const SizedBox(height: 24),
+                _buildRequestsList(),
+              ],
+            ),
           ),
         ),
       ),
@@ -65,20 +88,20 @@ class _TransactionStatusScreenState extends State<TransactionStatusScreen>
       case 'pending':
         statusColor = const Color(0xFFFF9800);
         statusIcon = Icons.pending;
-        statusCount = '5';
-        totalAmount = '₹9,200';
+        statusCount = _isLoading ? '0' : _realTransactions.where((t) => t['status'].toLowerCase() == 'pending').length.toString();
+        totalAmount = _isLoading ? '₹0' : _calculateTotalAmount('pending');
         break;
       case 'rejected':
         statusColor = const Color(0xFFFF5722);
         statusIcon = Icons.cancel;
-        statusCount = '2';
-        totalAmount = '₹85,000';
+        statusCount = _isLoading ? '0' : _realTransactions.where((t) => t['status'].toLowerCase() == 'rejected').length.toString();
+        totalAmount = _isLoading ? '₹0' : _calculateTotalAmount('rejected');
         break;
       case 'accepted':
         statusColor = const Color(0xFF4CAF50);
         statusIcon = Icons.check_circle;
-        statusCount = '12';
-        totalAmount = '₹23,300';
+        statusCount = _isLoading ? '0' : _realTransactions.where((t) => t['status'].toLowerCase() == 'accepted').length.toString();
+        totalAmount = _isLoading ? '₹0' : _calculateTotalAmount('accepted');
         break;
       default:
         statusColor = Colors.grey;
@@ -244,7 +267,38 @@ class _TransactionStatusScreenState extends State<TransactionStatusScreen>
   }
 
   Widget _buildRequestsList() {
+    if (_isLoading) {
+      return const Center(
+        child: CircularProgressIndicator(
+          color: Color(0xFF667eea),
+        ),
+      );
+    }
+    
     final requests = _getRequestsForStatus();
+    
+    if (requests.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.all(40),
+        child: Column(
+          children: [
+            Icon(
+              Icons.inbox,
+              size: 64,
+              color: Colors.grey[400],
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'No ${widget.status.toLowerCase()} transactions found',
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.grey[600],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
     
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -263,7 +317,7 @@ class _TransactionStatusScreenState extends State<TransactionStatusScreen>
             ),
             const SizedBox(width: 12),
             Text(
-              'Request Details',
+              'Transaction Details',
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -409,114 +463,183 @@ class _TransactionStatusScreenState extends State<TransactionStatusScreen>
   }
 
   List<Map<String, dynamic>> _getRequestsForStatus() {
-    switch (widget.status.toLowerCase()) {
-      case 'pending':
-        return [
-          {
-            'title': 'Leave Application',
-            'description': 'Annual leave for vacation',
-            'status': 'Pending',
-            'date': 'Dec 15, 2023',
-            'icon': Icons.event_busy,
-            'amount': null,
-          },
-          {
-            'title': 'Expense Reimbursement',
-            'description': 'Travel expenses for client meeting',
-            'status': 'Pending',
-            'date': 'Dec 14, 2023',
-            'icon': Icons.receipt,
-            'amount': '₹2,500',
-          },
-          {
-            'title': 'Overtime Request',
-            'description': 'Weekend work compensation',
-            'status': 'Pending',
-            'date': 'Dec 13, 2023',
-            'icon': Icons.schedule,
-            'amount': '₹1,200',
-          },
-          {
-            'title': 'Work From Home',
-            'description': 'Remote work request',
-            'status': 'Pending',
-            'date': 'Dec 12, 2023',
-            'icon': Icons.home,
-            'amount': null,
-          },
-          {
-            'title': 'Training Request',
-            'description': 'Flutter development course',
-            'status': 'Pending',
-            'date': 'Dec 11, 2023',
-            'icon': Icons.school,
-            'amount': '₹5,000',
-          },
-        ];
-      case 'rejected':
-        return [
-          {
-            'title': 'Salary Advance',
-            'description': 'Emergency fund request',
-            'status': 'Rejected',
-            'date': 'Dec 10, 2023',
-            'icon': Icons.money,
-            'amount': '₹10,000',
-          },
-          {
-            'title': 'Equipment Request',
-            'description': 'New laptop for development',
-            'status': 'Rejected',
-            'date': 'Dec 8, 2023',
-            'icon': Icons.laptop,
-            'amount': '₹75,000',
-          },
-        ];
-      case 'accepted':
-        return [
-          {
-            'title': 'Medical Reimbursement',
-            'description': 'Health checkup expenses',
-            'status': 'Accepted',
-            'date': 'Dec 7, 2023',
-            'icon': Icons.medical_services,
-            'amount': '₹3,500',
-          },
-          {
-            'title': 'Leave Application',
-            'description': 'Sick leave',
-            'status': 'Accepted',
-            'date': 'Dec 6, 2023',
-            'icon': Icons.event_busy,
-            'amount': null,
-          },
-          {
-            'title': 'Bonus Request',
-            'description': 'Performance bonus',
-            'status': 'Accepted',
-            'date': 'Dec 5, 2023',
-            'icon': Icons.star,
-            'amount': '₹15,000',
-          },
-          {
-            'title': 'Expense Claim',
-            'description': 'Client dinner expenses',
-            'status': 'Accepted',
-            'date': 'Dec 4, 2023',
-            'icon': Icons.restaurant,
-            'amount': '₹1,800',
-          },
-          {
-            'title': 'Training Approval',
-            'description': 'React Native workshop',
-            'status': 'Accepted',
-            'date': 'Dec 3, 2023',
-            'icon': Icons.school,
-            'amount': '₹3,000',
-          },
-        ];
-      default:
-        return [];
+    return _realTransactions.where((transaction) => 
+      transaction['status'].toLowerCase() == widget.status.toLowerCase()
+    ).toList();
+  }
+  
+  
+  Future<void> _loadTransactionData() async {
+    try {
+      final session = await SessionManager.getSession();
+      if (session != null) {
+        final response = await SupabaseService.client
+            .rpc('authenticate_with_access_key', params: {
+          'access_key_input': session['accessKey'],
+        });
+        
+        if (response != null && response.isNotEmpty) {
+          _userData = response[0];
+          final userId = SupabaseService.getCurrentUser()?.id;
+          final selectedEmployee = _userData!['selected_employee'];
+          
+          if (userId != null && selectedEmployee != null) {
+            String employeeName = selectedEmployee;
+            if (employeeName.contains('(')) {
+              employeeName = employeeName.split('(')[0].trim();
+            }
+            
+            // Load journal entries for selected employee only
+            final journalResponse = await SupabaseService.client
+                .from('journal_entries')
+                .select('*, journals!inner(journal_date, voucher_no, voucher_type)')
+                .eq('user_id', userId)
+                .eq('account', employeeName)
+                .order('id', ascending: false)
+                .limit(20);
+            
+            final expenseAccount = _userData!['expense_account'] ?? 'Expense Account';
+            
+            _realTransactions = journalResponse.map<Map<String, dynamic>>((entry) {
+              final debit = entry['debit_amount'] ?? 0.0;
+              final credit = entry['credit_amount'] ?? 0.0;
+              final isIncome = debit > 0;
+              
+              // Simulate status based on amount (for demo)
+              String status;
+              if (credit > 5000) {
+                status = 'Pending';
+              } else if (credit > 2000) {
+                status = 'Accepted';
+              } else {
+                status = 'Rejected';
+              }
+              
+              return {
+                'title': isIncome ? 'From $expenseAccount' : 'To $expenseAccount',
+                'description': entry['short_narration'] ?? 'Transaction',
+                'status': status,
+                'date': _formatDate(entry['journals']['journal_date']),
+                'icon': isIncome ? Icons.trending_up : Icons.trending_down,
+                'amount': isIncome ? '+₹${debit.toStringAsFixed(0)}' : '-₹${credit.toStringAsFixed(0)}',
+              };
+            }).toList();
+          }
+        }
+      }
+    } catch (e) {
+      print('Error loading transaction data: $e');
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
     }
+  }
+  
+  String _formatDate(String dateStr) {
+    try {
+      final date = DateTime.parse(dateStr);
+      final now = DateTime.now();
+      final difference = now.difference(date).inDays;
+      
+      if (difference == 0) {
+        return 'Today';
+      } else if (difference == 1) {
+        return 'Yesterday';
+      } else {
+        return '$difference days ago';
+      }
+    } catch (e) {
+      return dateStr;
+    }
+  }
+  
+  String _calculateTotalAmount(String status) {
+    final filteredTransactions = _realTransactions.where((t) => 
+      t['status'].toLowerCase() == status.toLowerCase()
+    ).toList();
+    
+    double total = 0.0;
+    for (var transaction in filteredTransactions) {
+      final amountStr = transaction['amount'].toString().replaceAll(RegExp(r'[^0-9.]'), '');
+      final amount = double.tryParse(amountStr) ?? 0.0;
+      total += amount;
+    }
+    
+    return '₹${total.toStringAsFixed(0)}';
+  }
+
+  Future<void> _refreshTransactionData() async {
+    setState(() {
+      _isLoading = true;
+    });
+    await _loadTransactionData();
+  }
+
+  Widget _buildShimmerBox(double height, double width, {double borderRadius = 4}) {
+    return AnimatedBuilder(
+      animation: _shimmerAnimation,
+      builder: (context, child) {
+        return Container(
+          height: height,
+          width: width,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(borderRadius),
+            gradient: LinearGradient(
+              begin: Alignment.centerLeft,
+              end: Alignment.centerRight,
+              stops: [
+                _shimmerAnimation.value - 0.3,
+                _shimmerAnimation.value,
+                _shimmerAnimation.value + 0.3,
+              ],
+              colors: [
+                Colors.grey[300]!,
+                Colors.grey[100]!,
+                Colors.grey[300]!,
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildShimmerWelcome() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildShimmerBox(24, 150),
+                    const SizedBox(height: 8),
+                    _buildShimmerBox(16, 200),
+                  ],
+                ),
+              ),
+              _buildShimmerBox(60, 60, borderRadius: 16),
+            ],
+          ),
+          const SizedBox(height: 16),
+          _buildShimmerBox(80, double.infinity, borderRadius: 12),
+        ],
+      ),
+    );
   }
 }

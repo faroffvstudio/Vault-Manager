@@ -3,7 +3,7 @@
 import 'package:flutter/material.dart';
 import '../transaction_status_screen.dart';
 import 'exp_attendance_status_screen.dart';
-import '../chat_call_screen.dart';
+import '../manager_contact_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   final ScrollController? scrollController;
@@ -16,8 +16,12 @@ class DashboardScreen extends StatefulWidget {
 class _DashboardScreenState extends State<DashboardScreen>
     with TickerProviderStateMixin {
   late AnimationController _animationController;
+  late AnimationController _shimmerController;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
+  late Animation<double> _shimmerAnimation;
+  
+  bool _isLoading = true;
 
   @override
   void initState() {
@@ -26,6 +30,10 @@ class _DashboardScreenState extends State<DashboardScreen>
       duration: const Duration(milliseconds: 800),
       vsync: this,
     );
+    _shimmerController = AnimationController(
+      duration: const Duration(milliseconds: 1500),
+      vsync: this,
+    )..repeat();
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
     );
@@ -36,12 +44,17 @@ class _DashboardScreenState extends State<DashboardScreen>
       parent: _animationController,
       curve: Curves.easeOutBack,
     ));
+    _shimmerAnimation = Tween<double>(begin: -1.0, end: 2.0).animate(
+      CurvedAnimation(parent: _shimmerController, curve: Curves.easeInOut),
+    );
     _animationController.forward();
+    _loadDashboardData();
   }
 
   @override
   void dispose() {
     _animationController.dispose();
+    _shimmerController.dispose();
     super.dispose();
   }
 
@@ -53,24 +66,28 @@ class _DashboardScreenState extends State<DashboardScreen>
         opacity: _fadeAnimation,
         child: SlideTransition(
           position: _slideAnimation,
-          child: SingleChildScrollView(
-            controller: widget.scrollController,
-            padding: const EdgeInsets.only(top: 20, left: 20, right: 20, bottom: 100),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildWelcomeSection(),
-                const SizedBox(height: 24),
-                _buildQuickStats(),
-                const SizedBox(height: 24),
-                _buildStatusWidgets(),
-                const SizedBox(height: 24),
-                _buildCommunication(),
-                const SizedBox(height: 24),
-                _buildQuickActions(),
-                const SizedBox(height: 24),
-                _buildRecentActivity(),
-              ],
+          child: RefreshIndicator(
+            onRefresh: _refreshDashboard,
+            color: const Color(0xFF667eea),
+            child: SingleChildScrollView(
+              controller: widget.scrollController,
+              padding: const EdgeInsets.only(top: 20, left: 20, right: 20, bottom: 100),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _isLoading ? _buildShimmerWelcome() : _buildWelcomeSection(),
+                  const SizedBox(height: 24),
+                  _isLoading ? _buildShimmerStats() : _buildQuickStats(),
+                  const SizedBox(height: 24),
+                  _isLoading ? _buildShimmerStatus() : _buildStatusWidgets(),
+                  const SizedBox(height: 24),
+                  _isLoading ? _buildShimmerCommunication() : _buildCommunication(),
+                  const SizedBox(height: 24),
+                  _isLoading ? _buildShimmerActions() : _buildQuickActions(),
+                  const SizedBox(height: 24),
+                  _isLoading ? _buildShimmerActivity() : _buildRecentActivity(),
+                ],
+              ),
             ),
           ),
         ),
@@ -498,7 +515,7 @@ class _DashboardScreenState extends State<DashboardScreen>
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => ChatCallScreen(type: type),
+        builder: (context) => ManagerContactScreen(type: type),
       ),
     );
   }
@@ -842,6 +859,287 @@ class _DashboardScreenState extends State<DashboardScreen>
               fontSize: 12,
               fontWeight: FontWeight.w500,
               color: Colors.grey[600],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _loadDashboardData() async {
+    // Simulate loading time
+    await Future.delayed(const Duration(seconds: 2));
+    setState(() {
+      _isLoading = false;
+    });
+  }
+
+  Future<void> _refreshDashboard() async {
+    setState(() {
+      _isLoading = true;
+    });
+    await _loadDashboardData();
+  }
+
+  Widget _buildShimmerBox(double height, double width, {double borderRadius = 4}) {
+    return AnimatedBuilder(
+      animation: _shimmerAnimation,
+      builder: (context, child) {
+        return Container(
+          height: height,
+          width: width,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(borderRadius),
+            gradient: LinearGradient(
+              begin: Alignment.centerLeft,
+              end: Alignment.centerRight,
+              stops: [
+                _shimmerAnimation.value - 0.3,
+                _shimmerAnimation.value,
+                _shimmerAnimation.value + 0.3,
+              ],
+              colors: [
+                Colors.grey[300]!,
+                Colors.grey[100]!,
+                Colors.grey[300]!,
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildShimmerWelcome() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildShimmerBox(24, 150),
+                    const SizedBox(height: 8),
+                    _buildShimmerBox(16, 200),
+                  ],
+                ),
+              ),
+              _buildShimmerBox(60, 60, borderRadius: 16),
+            ],
+          ),
+          const SizedBox(height: 16),
+          _buildShimmerBox(80, double.infinity, borderRadius: 12),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildShimmerStats() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildShimmerBox(24, 120),
+        const SizedBox(height: 16),
+        Row(
+          children: List.generate(3, (index) => 
+            Expanded(
+              child: Container(
+                margin: EdgeInsets.only(right: index < 2 ? 12 : 0),
+                padding: const EdgeInsets.all(18),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 10,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  children: [
+                    _buildShimmerBox(48, 48, borderRadius: 12),
+                    const SizedBox(height: 12),
+                    _buildShimmerBox(16, 40),
+                    const SizedBox(height: 4),
+                    _buildShimmerBox(12, 60),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildShimmerStatus() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildShimmerBox(24, 140),
+        const SizedBox(height: 16),
+        Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Row(
+            children: List.generate(3, (index) => 
+              Expanded(
+                child: Container(
+                  margin: EdgeInsets.only(right: index < 2 ? 12 : 0),
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[50],
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Column(
+                    children: [
+                      _buildShimmerBox(40, 40, borderRadius: 10),
+                      const SizedBox(height: 8),
+                      _buildShimmerBox(18, 20),
+                      const SizedBox(height: 4),
+                      _buildShimmerBox(12, 50),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildShimmerCommunication() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildShimmerBox(24, 140),
+        const SizedBox(height: 16),
+        Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Expanded(child: _buildShimmerBox(80, double.infinity, borderRadius: 16)),
+              const SizedBox(width: 16),
+              Expanded(child: _buildShimmerBox(80, double.infinity, borderRadius: 16)),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildShimmerActions() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildShimmerBox(24, 120),
+        const SizedBox(height: 16),
+        GridView.count(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          crossAxisCount: 2,
+          crossAxisSpacing: 12,
+          mainAxisSpacing: 12,
+          childAspectRatio: 1.2,
+          children: List.generate(4, (index) => 
+            Container(
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  _buildShimmerBox(54, 54, borderRadius: 14),
+                  const SizedBox(height: 12),
+                  _buildShimmerBox(14, 80),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildShimmerActivity() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildShimmerBox(24, 140),
+        const SizedBox(height: 16),
+        Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Column(
+            children: List.generate(3, (index) => 
+              Padding(
+                padding: EdgeInsets.only(bottom: index < 2 ? 24 : 0),
+                child: Row(
+                  children: [
+                    _buildShimmerBox(38, 38, borderRadius: 10),
+                    const SizedBox(width: 16),
+                    Expanded(child: _buildShimmerBox(15, double.infinity)),
+                    _buildShimmerBox(12, 60, borderRadius: 8),
+                  ],
+                ),
+              ),
             ),
           ),
         ),

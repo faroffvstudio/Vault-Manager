@@ -1,6 +1,10 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../components/custom_bottom_sheet.dart';
+import 'package:vaultmanager/session_manager.dart';
+import 'package:vaultmanager/supabase_service.dart';
+import '../custom_bottom_sheet.dart';
 
 class AddTransactionScreen extends StatefulWidget {
   const AddTransactionScreen({super.key});
@@ -15,21 +19,19 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
   final _amountController = TextEditingController();
   final _descriptionController = TextEditingController();
   late AnimationController _animationController;
+  late AnimationController _shimmerController;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
+  late Animation<double> _shimmerAnimation;
   
   String _selectedAccount = 'Main Account';
   String _selectedCreditAccount = 'Credit Card';
   DateTime _selectedDate = DateTime.now();
   bool _isLoading = false;
+  
+  Map<String, dynamic>? _userData;
+  bool _hasAddPermission = false;
 
-  final List<Map<String, dynamic>> _accounts = [
-    {'name': 'Main Account', 'type': 'Savings', 'balance': '₹1,25,750', 'icon': Icons.account_balance},
-    {'name': 'Salary Account', 'type': 'Savings', 'balance': '₹85,200', 'icon': Icons.account_balance_wallet},
-    {'name': 'Credit Card', 'type': 'Credit', 'balance': '₹15,000', 'icon': Icons.credit_card},
-    {'name': 'Investment', 'type': 'Investment', 'balance': '₹2,45,000', 'icon': Icons.trending_up},
-    {'name': 'Cash Wallet', 'type': 'Cash', 'balance': '₹5,500', 'icon': Icons.account_balance_wallet},
-  ];
 
   @override
   void initState() {
@@ -38,6 +40,10 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
       duration: const Duration(milliseconds: 800),
       vsync: this,
     );
+    _shimmerController = AnimationController(
+      duration: const Duration(milliseconds: 1500),
+      vsync: this,
+    )..repeat();
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
     );
@@ -48,12 +54,73 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
       parent: _animationController,
       curve: Curves.easeOutBack,
     ));
+    _shimmerAnimation = Tween<double>(begin: -1.0, end: 2.0).animate(
+      CurvedAnimation(parent: _shimmerController, curve: Curves.easeInOut),
+    );
     _animationController.forward();
+    _loadUserData();
+  }
+
+  List<Map<String, dynamic>> _allAccounts = [];
+
+  Future<void> _loadUserData() async {
+    try {
+      final session = await SessionManager.getSession();
+      if (session != null) {
+        final response = await SupabaseService.client
+            .rpc('authenticate_with_access_key', params: {
+          'access_key_input': session['accessKey'],
+        });
+        
+        if (response != null && response.isNotEmpty) {
+          _userData = response[0];
+          
+          // Check add record permission
+          final permissions = _userData!['permissions']?.toString() ?? '';
+          _hasAddPermission = permissions.contains('Add Record') || 
+                            (_userData!['can_edit_data'] ?? 0) == 1;
+          
+          // Set up all accounts (both expense and personal)
+          final expenseAccount = _userData!['expense_account'];
+          final selectedEmployee = _userData!['selected_employee'];
+          
+          if (expenseAccount != null && selectedEmployee != null) {
+            String employeeName = selectedEmployee;
+            if (employeeName.contains('(')) {
+              employeeName = employeeName.split('(')[0].trim();
+            }
+            
+            _allAccounts = [
+              {
+                'name': expenseAccount,
+                'type': 'Expense',
+                'balance': '₹0',
+                'icon': Icons.account_balance_wallet
+              },
+              {
+                'name': employeeName,
+                'type': 'Personal',
+                'balance': '₹0',
+                'icon': Icons.person
+              }
+            ];
+            
+            _selectedAccount = expenseAccount;
+            _selectedCreditAccount = employeeName;
+          }
+          
+          setState(() {});
+        }
+      }
+    } catch (e) {
+      print('Error loading user data: $e');
+    }
   }
 
   @override
   void dispose() {
     _animationController.dispose();
+    _shimmerController.dispose();
     _amountController.dispose();
     _descriptionController.dispose();
     super.dispose();
@@ -61,6 +128,42 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
 
   @override
   Widget build(BuildContext context) {
+    if (!_hasAddPermission && _userData != null) {
+      return Scaffold(
+        backgroundColor: const Color(0xFFF8F9FA),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.block,
+                size: 64,
+                color: Colors.grey[400],
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Access Denied',
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey[600],
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'You do not have permission to add transactions',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.grey[500],
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+    
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
       body: FadeTransition(
@@ -74,17 +177,17 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildWelcomeSection(),
+                  _userData == null ? _buildShimmerWelcome() : _buildWelcomeSection(),
                   const SizedBox(height: 24),
-                  _buildDateSelector(),
+                  _userData == null ? _buildShimmerDate() : _buildDateSelector(),
                   const SizedBox(height: 24),
-                  _buildDebitSection(),
+                  _userData == null ? _buildShimmerSection() : _buildCreditSection(),
                   const SizedBox(height: 20),
-                  _buildCreditSection(),
+                  _userData == null ? _buildShimmerSection() : _buildDebitSection(),
                   const SizedBox(height: 20),
-                  _buildTotalAmountSection(),
+                  _userData == null ? _buildShimmerSummary() : _buildTotalAmountSection(),
                   const SizedBox(height: 32),
-                  _buildSubmitButton(),
+                  _userData == null ? _buildShimmerButton() : _buildSubmitButton(),
                   const SizedBox(height: 20),
                 ],
               ),
@@ -237,9 +340,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
           const SizedBox(height: 20),
           _buildAccountSelector(),
           const SizedBox(height: 20),
-          _buildAmountField(),
-          const SizedBox(height: 12),
-          _buildQuickAmountSelector(),
+          _buildDescriptionField(),
         ],
       ),
     );
@@ -291,7 +392,9 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
           const SizedBox(height: 20),
           _buildCreditAccountSelector(),
           const SizedBox(height: 20),
-          _buildDescriptionField(),
+          _buildAmountField(),
+          const SizedBox(height: 12),
+          _buildQuickAmountSelector(),
         ],
       ),
     );
@@ -435,9 +538,13 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
   }
 
   Widget _buildAccountSelector() {
-    final selectedAccount = _accounts.firstWhere(
+    if (_allAccounts.isEmpty) {
+      return const CircularProgressIndicator();
+    }
+    
+    final selectedAccount = _allAccounts.firstWhere(
       (account) => account['name'] == _selectedAccount,
-      orElse: () => _accounts.first,
+      orElse: () => _allAccounts.first,
     );
 
     return Column(
@@ -535,9 +642,9 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
       title: 'Select Debit Account',
       content: ListView.builder(
         padding: const EdgeInsets.symmetric(horizontal: 20),
-        itemCount: _accounts.length,
+        itemCount: _allAccounts.length,
         itemBuilder: (context, index) {
-          final account = _accounts[index];
+          final account = _allAccounts[index];
           final isSelected = account['name'] == _selectedAccount;
           
           return Container(
@@ -549,6 +656,9 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
                 onTap: () {
                   setState(() {
                     _selectedAccount = account['name'];
+                    // Automatically set opposite account as credit
+                    _selectedCreditAccount = _allAccounts
+                        .firstWhere((acc) => acc['name'] != account['name'])['name'];
                   });
                   Navigator.pop(context);
                 },
@@ -633,9 +743,13 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
   }
 
   Widget _buildCreditAccountSelector() {
-    final selectedCreditAccount = _accounts.firstWhere(
+    if (_allAccounts.isEmpty) {
+      return const CircularProgressIndicator();
+    }
+    
+    final selectedCreditAccount = _allAccounts.firstWhere(
       (account) => account['name'] == _selectedCreditAccount,
-      orElse: () => _accounts.first,
+      orElse: () => _allAccounts.first,
     );
 
     return Column(
@@ -728,14 +842,19 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
   }
 
   void _showCreditAccountSelector() {
+    // Filter out the selected debit account
+    final availableAccounts = _allAccounts.where(
+      (account) => account['name'] != _selectedAccount
+    ).toList();
+    
     CustomBottomSheet.show(
       context: context,
       title: 'Select Credit Account',
       content: ListView.builder(
         padding: const EdgeInsets.symmetric(horizontal: 20),
-        itemCount: _accounts.length,
+        itemCount: availableAccounts.length,
         itemBuilder: (context, index) {
-          final account = _accounts[index];
+          final account = availableAccounts[index];
           final isSelected = account['name'] == _selectedCreditAccount;
           
           return Container(
@@ -962,14 +1081,15 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
 
   Widget _buildTotalAmountSection() {
     final amount = _amountController.text.isEmpty ? '0' : _amountController.text;
-    final debitAccount = _accounts.firstWhere(
+    final debitAccount = _allAccounts.isNotEmpty ? _allAccounts.firstWhere(
       (account) => account['name'] == _selectedAccount,
-      orElse: () => _accounts.first,
-    );
-    final creditAccount = _accounts.firstWhere(
+      orElse: () => _allAccounts.first,
+    ) : {'name': 'Loading...', 'icon': Icons.account_balance};
+    
+    final creditAccount = _allAccounts.isNotEmpty ? _allAccounts.firstWhere(
       (account) => account['name'] == _selectedCreditAccount,
-      orElse: () => _accounts.first,
-    );
+      orElse: () => _allAccounts.first,
+    ) : {'name': 'Loading...', 'icon': Icons.person};
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1258,8 +1378,70 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
       _isLoading = true;
     });
 
-    // Simulate API call
-    await Future.delayed(const Duration(seconds: 1));
+    try {
+      final userId = SupabaseService.getCurrentUser()?.id;
+      if (userId == null) return;
+      
+      final amount = double.parse(_amountController.text);
+      final description = _descriptionController.text.isEmpty 
+          ? 'Transaction from $_selectedAccount to $_selectedCreditAccount' 
+          : _descriptionController.text;
+      
+      // Create journal header (like window journal management)
+      final journalData = {
+        'voucher_no': 'EXP-${DateTime.now().millisecondsSinceEpoch}',
+        'journal_date': _selectedDate.toIso8601String(),
+        'voucher_type': 'expense',
+        'user_id': userId,
+        'total_debit': amount,
+        'total_credit': amount,
+        'long_narration': description,
+      };
+      
+      // Insert journal header
+      final journalResponse = await SupabaseService.client
+          .from('journals')
+          .insert(journalData)
+          .select('id')
+          .single();
+      final journalId = journalResponse['id'];
+      
+      // Create journal entries (debit and credit)
+      final entriesData = [
+        {
+          'user_id': userId,
+          'journal_id': journalId,
+          'account': _selectedAccount,
+          'debit_amount': amount,
+          'credit_amount': 0,
+          'short_narration': description,
+        },
+        {
+          'user_id': userId,
+          'journal_id': journalId,
+          'account': _selectedCreditAccount,
+          'debit_amount': 0,
+          'credit_amount': amount,
+          'short_narration': description,
+        },
+      ];
+      
+      await SupabaseService.client.from('journal_entries').insert(entriesData);
+      
+    } catch (e) {
+      print('Error saving transaction: $e');
+      // ignore: use_build_context_synchronously
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      setState(() {
+        _isLoading = false;
+      });
+      return;
+    }
 
     setState(() {
       _isLoading = false;
@@ -1296,5 +1478,225 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
       _selectedCreditAccount = 'Credit Card';
       _selectedDate = DateTime.now();
     });
+  }
+
+  Widget _buildShimmerBox(double height, double width, {double borderRadius = 4}) {
+    return AnimatedBuilder(
+      animation: _shimmerAnimation,
+      builder: (context, child) {
+        return Container(
+          height: height,
+          width: width,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(borderRadius),
+            gradient: LinearGradient(
+              begin: Alignment.centerLeft,
+              end: Alignment.centerRight,
+              stops: [
+                _shimmerAnimation.value - 0.3,
+                _shimmerAnimation.value,
+                _shimmerAnimation.value + 0.3,
+              ],
+              colors: [
+                Colors.grey[300]!,
+                Colors.grey[100]!,
+                Colors.grey[300]!,
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildShimmerWelcome() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildShimmerBox(24, 150),
+                const SizedBox(height: 8),
+                _buildShimmerBox(16, 200),
+              ],
+            ),
+          ),
+          _buildShimmerBox(60, 60, borderRadius: 16),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildShimmerDate() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          _buildShimmerBox(40, 40, borderRadius: 10),
+          const SizedBox(width: 12),
+          _buildShimmerBox(16, 120),
+          const Spacer(),
+          _buildShimmerBox(20, 20, borderRadius: 6),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildShimmerSection() {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildShimmerBox(18, 100),
+          const SizedBox(height: 20),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.grey[50],
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Row(
+              children: [
+                _buildShimmerBox(40, 40, borderRadius: 10),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildShimmerBox(16, double.infinity),
+                      const SizedBox(height: 4),
+                      _buildShimmerBox(12, 100),
+                    ],
+                  ),
+                ),
+                _buildShimmerBox(20, 20, borderRadius: 6),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+          _buildShimmerBox(50, double.infinity, borderRadius: 16),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildShimmerSummary() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildShimmerBox(18, 150),
+        const SizedBox(height: 16),
+        Row(
+          children: [
+            Expanded(
+              child: Container(
+                padding: const EdgeInsets.all(18),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 10,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        _buildShimmerBox(16, 16, borderRadius: 8),
+                        const SizedBox(width: 8),
+                        _buildShimmerBox(12, 80),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    _buildShimmerBox(18, 60),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Container(
+                padding: const EdgeInsets.all(18),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 10,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        _buildShimmerBox(16, 16, borderRadius: 8),
+                        const SizedBox(width: 8),
+                        _buildShimmerBox(12, 80),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    _buildShimmerBox(18, 60),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildShimmerButton() {
+    return Column(
+      children: [
+        _buildShimmerBox(50, double.infinity, borderRadius: 16),
+        const SizedBox(height: 12),
+        _buildShimmerBox(40, 100, borderRadius: 12),
+      ],
+    );
   }
 }

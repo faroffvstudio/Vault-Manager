@@ -1,16 +1,18 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
 import 'chat_screen.dart';
 
-class ChatCallScreen extends StatefulWidget {
+class ManagerContactScreen extends StatefulWidget {
   final String type;
   
-  const ChatCallScreen({super.key, required this.type});
+  const ManagerContactScreen({super.key, required this.type});
 
   @override
-  State<ChatCallScreen> createState() => _ChatCallScreenState();
+  State<ManagerContactScreen> createState() => _ManagerContactScreenState();
 }
 
-class _ChatCallScreenState extends State<ChatCallScreen>
+class _ManagerContactScreenState extends State<ManagerContactScreen>
     with TickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;

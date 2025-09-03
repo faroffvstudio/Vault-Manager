@@ -1,8 +1,10 @@
+// ignore_for_file: deprecated_member_use
+
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'sales_manager_dashboard.dart';
-import 'profile_screen.dart';
+import '../manager_profile_screen.dart';
 
 class SalesManagerNavigation extends StatefulWidget {
   const SalesManagerNavigation({super.key});

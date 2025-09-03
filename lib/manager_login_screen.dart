@@ -1,18 +1,23 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:vaultmanager/supabase_service.dart';
 import 'Expense_Manager/exp_bottom_navigation_bar.dart';
 
-class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+class ManagerLoginScreen extends StatefulWidget {
+  const ManagerLoginScreen({super.key});
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  State<ManagerLoginScreen> createState() => _ManagerLoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen>
+class _ManagerLoginScreenState extends State<ManagerLoginScreen>
     with TickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   final _keyController = TextEditingController();
   String? _selectedRole;
+  List<Map<String, dynamic>> _roles = [];
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
@@ -37,6 +42,39 @@ class _LoginScreenState extends State<LoginScreen>
       curve: Curves.easeOutBack,
     ));
     _animationController.forward();
+    _loadRoles();
+    _checkExistingSession();
+  }
+
+  Future<void> _loadRoles() async {
+    final userId = SupabaseService.getCurrentUser()?.id;
+    if (userId == null) return;
+    
+    try {
+      final response = await SupabaseService.client
+          .from('roles')
+          .select('name')
+          .eq('user_id', userId)
+          .eq('is_enabled', 1)
+          .order('name');
+      
+      final uniqueRoles = <Map<String, dynamic>>[];
+      final seenRoleNames = <String>{};
+      
+      for (var role in response) {
+        final roleName = role['name'].toString();
+        if (!seenRoleNames.contains(roleName)) {
+          seenRoleNames.add(roleName);
+          uniqueRoles.add({'name': roleName});
+        }
+      }
+      
+      setState(() {
+        _roles = uniqueRoles;
+      });
+    } catch (e) {
+      // Handle error silently
+    }
   }
 
   @override
@@ -50,16 +88,92 @@ class _LoginScreenState extends State<LoginScreen>
     if (_formKey.currentState!.validate()) {
       setState(() => _isLoading = true);
       
-      // Simulate login delay
-      await Future.delayed(const Duration(seconds: 1));
-      
-      if (mounted) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) =>  const CustomBottomNavigationBar()),
-        );
+      try {
+        // Validate access key using Supabase function
+        final response = await SupabaseService.client
+            .rpc('authenticate_with_access_key', params: {
+          'access_key_input': _keyController.text.trim(),
+        });
+        
+        if (response != null && response.isNotEmpty) {
+          final userData = response[0];
+          final userRole = userData['role_type'];
+          
+          // Check if selected role matches user's actual role
+          if (_selectedRole == userRole) {
+            // Save session
+            await _saveSession(_keyController.text.trim(), _selectedRole!);
+            
+            if (mounted) {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => const CustomBottomNavigationBar()),
+              );
+            }
+          } else {
+            _showError('Selected role does not match your assigned role');
+          }
+        } else {
+          _showError('Invalid access key or key has expired');
+        }
+      } catch (e) {
+        _showError('Login failed. Please check your credentials.');
+      } finally {
+        setState(() => _isLoading = false);
       }
     }
+  }
+  
+  Future<void> _checkExistingSession() async {
+    final prefs = await SharedPreferences.getInstance();
+    final savedAccessKey = prefs.getString('manager_access_key');
+    final savedRole = prefs.getString('manager_role');
+    
+    if (savedAccessKey != null && savedRole != null) {
+      // Auto-login with saved credentials
+      try {
+        final response = await SupabaseService.client
+            .rpc('authenticate_with_access_key', params: {
+          'access_key_input': savedAccessKey,
+        });
+        
+        if (response != null && response.isNotEmpty) {
+          if (mounted) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => const CustomBottomNavigationBar()),
+            );
+          }
+        } else {
+          // Clear invalid session
+          await _clearSession();
+        }
+      } catch (e) {
+        await _clearSession();
+      }
+    }
+  }
+  
+  Future<void> _saveSession(String accessKey, String role) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('manager_access_key', accessKey);
+    await prefs.setString('manager_role', role);
+  }
+  
+  Future<void> _clearSession() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('manager_access_key');
+    await prefs.remove('manager_role');
+  }
+
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
+        duration: const Duration(seconds: 3),
+      ),
+    );
   }
 
   @override
@@ -165,11 +279,13 @@ class _LoginScreenState extends State<LoginScreen>
               filled: true,
               fillColor: const Color(0xFFF8F9FA),
             ),
-            items: const [
-              DropdownMenuItem(value: 'Admin', child: Text('Admin')),
-              DropdownMenuItem(value: 'User', child: Text('User')),
-              DropdownMenuItem(value: 'Manager', child: Text('Manager')),
-            ],
+            items: _roles.map((role) {
+              final roleName = role['name'].toString();
+              return DropdownMenuItem<String>(
+                value: roleName,
+                child: Text(roleName),
+              );
+            }).toList(),
             onChanged: (value) => setState(() => _selectedRole = value),
             validator: (value) => value == null ? 'Please select a role' : null,
           ),

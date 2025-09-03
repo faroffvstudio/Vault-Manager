@@ -1,11 +1,13 @@
+// ignore_for_file: deprecated_member_use
+
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'exp_dashboard_screen.dart';
 import '../transaction_screen.dart';
 import 'exp_add_transaction_screen.dart';
-import '../my_ledger_screen.dart';
-import '../profile_screen.dart';
+import '../vm_my_ledger_screen.dart';
+import '../manager_profile_screen.dart';
 
 class CustomBottomNavigationBar extends StatefulWidget {
   const CustomBottomNavigationBar({super.key});
@@ -25,7 +27,7 @@ class _CustomBottomNavigationBarState extends State<CustomBottomNavigationBar> w
     DashboardScreen(scrollController: _scrollController),
     TransactionScreen(scrollController: _scrollController),
     const AddTransactionScreen(),
-    MyLedgerScreen(scrollController: _scrollController),
+    VaultManagerMyLedgerScreen(scrollController: _scrollController),
     ProfileScreen(scrollController: _scrollController),
   ];
 
