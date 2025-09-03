@@ -47,16 +47,15 @@ class _ManagerLoginScreenState extends State<ManagerLoginScreen>
   }
 
   Future<void> _loadRoles() async {
-    final userId = SupabaseService.getCurrentUser()?.id;
-    if (userId == null) return;
-    
     try {
+      print('Loading roles...');
       final response = await SupabaseService.client
           .from('roles')
           .select('name')
-          .eq('user_id', userId)
           .eq('is_enabled', 1)
           .order('name');
+      
+      print('Roles response: $response');
       
       final uniqueRoles = <Map<String, dynamic>>[];
       final seenRoleNames = <String>{};
@@ -69,11 +68,21 @@ class _ManagerLoginScreenState extends State<ManagerLoginScreen>
         }
       }
       
+      print('Unique roles: $uniqueRoles');
+      
       setState(() {
         _roles = uniqueRoles;
       });
     } catch (e) {
-      // Handle error silently
+      print('Error loading roles: $e');
+      // Add fallback roles if database fails
+      setState(() {
+        _roles = [
+          {'name': 'Manager'},
+          {'name': 'Admin'},
+          {'name': 'Employee'},
+        ];
+      });
     }
   }
 
